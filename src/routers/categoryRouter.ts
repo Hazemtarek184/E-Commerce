@@ -4,16 +4,18 @@ import * as categoryController from "../controllers/categoryController";
 const router = express.Router();
 
 router.get("/categories", categoryController.getCategories);
-router.get("/sub-categories/:mainCategoryId", categoryController.getSubCategories);
-router.get("/service-provider/:serviceProviderId", categoryController.getServiceProvider);
-
-router.get("test", (req, res) => {
-    res.send("Test route is working");
-}
-);
-
 router.post("/categories", categoryController.createCategory);
+router.put("/categories/:categoryId", categoryController.updateMainCategory);
+router.delete("/categories/:categoryId", categoryController.deleteMainCategory);
+
+router.get("/sub-categories/:mainCategoryId", categoryController.getSubCategories);
 router.post("/sub-categories/:mainCategoryId", categoryController.createSubCategory);
-router.post("/service-provider/:subCategoryId", categoryController.createServiceProvider);
+router.put("/sub-categories/:subCategoryId", categoryController.updateSubCategory);
+router.delete("/sub-categories/:subCategoryId", categoryController.deleteSubCategory);
+
+router.get("/service-providers/:subCategoryId", categoryController.getServiceProvider);
+router.post("/service-providers/:subCategoryId", categoryController.createServiceProvider);
+router.put("/service-providers/:serviceProviderId", categoryController.updateServiceProvider);
+router.delete("/service-providers/:serviceProviderId", categoryController.deleteServiceProvider);
 
 export default router;

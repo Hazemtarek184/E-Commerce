@@ -1,13 +1,13 @@
-import { IServiceProvider } from "./service.provider.interface";
+import { Types } from "mongoose";
 
-export interface IMainCategory{
+export interface IMainCategory {
     englishName: string;
     arabicName: string;
-    subCategories: ISubCategory[];
+    subCategories: Types.ObjectId[];
 }
 
-export interface ISubCategory{
+export interface ISubCategory {
     englishName: string;
     arabicName: string;
-    serviceProvider: IServiceProvider[];
+    serviceProvider: Types.ObjectId[];
 }

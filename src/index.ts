@@ -3,11 +3,13 @@ import mongoose from 'mongoose';
 import "dotenv/config.js";
 import bodyParser from 'body-parser';
 import categoryRouter from './routers/categoryRouter';
+import cors from 'cors';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const MONGOURI = process.env.MONGO_CONNECTION_URI;
 
+app.use(cors()); // Allow all origins for CORS
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());

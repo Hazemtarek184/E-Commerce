@@ -5,9 +5,9 @@ export interface IServiceProvider {
     workingDays: string[];
     workingHours: string[];
     closingHours: string[];
-    phoneConstact: phoneConstact[];
+    phoneContacts: phoneContacts[];
     locationLinks: string[];
-    offers: offers[];
+    offers?: offers[];
 }
 
 interface offers {
@@ -16,7 +16,7 @@ interface offers {
     imageUrl: string[];
 }
 
-interface phoneConstact {
+interface phoneContacts {
     phoneNumber: string;
     hasWhatsApp: boolean;
     canCall: boolean;
