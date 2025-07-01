@@ -1,6 +1,8 @@
 import mongoose, { Schema, Document } from "mongoose";
 import { IUser } from "../types/User.interface";
 
+export type { IUser };
+
 const userSchema: Schema = new Schema({
     username: { type: String, required: true },
     email: { type: String, required: true },

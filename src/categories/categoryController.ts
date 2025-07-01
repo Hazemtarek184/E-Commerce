@@ -110,6 +110,23 @@ export const getServiceProvider = async (req: Request, res: Response): Promise<v
     }
 };
 
+export const searchServiceProvidersByName = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { searchString } = req.query;
+        if (!searchString || typeof searchString !== 'string') {
+            sendErrorResponse(res, 400, "Query string is required");
+            return;
+        }
+        // Use a case-insensitive regex for substring search (supports English and Arabic)
+        const regex = new RegExp(searchString, 'i');
+        const providers = await serviceProviderModel.find({ name: regex });
+        sendSuccessResponse(res, 200, { providers });
+    } catch (error) {
+        console.error("Error searching service providers:", error);
+        sendErrorResponse(res, 500, "Internal server error");
+    }
+};
+
 // CREATE OPERATIONS
 export const createCategory = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -482,3 +499,4 @@ export const deleteServiceProvider = async (req: Request, res: Response): Promis
         sendErrorResponse(res, 500, "Internal server error");
     }
 };
+

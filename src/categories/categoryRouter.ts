@@ -18,4 +18,6 @@ router.post("/service-providers/:subCategoryId", categoryController.createServic
 router.put("/service-providers/:serviceProviderId", categoryController.updateServiceProvider);
 router.delete("/service-providers/:serviceProviderId", categoryController.deleteServiceProvider);
 
+router.get("/search-providers", categoryController.searchServiceProvidersByName);
+
 export default router;
