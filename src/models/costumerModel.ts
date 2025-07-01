@@ -1,5 +1,5 @@
 import { Schema, Types } from "mongoose";
-import { IUser, userModel } from "./userModel";
+import { IUser, userModel } from "../users/userModel";
 
 interface ICostomer extends IUser {
     orderHistory: Types.ObjectId[];

@@ -1,5 +1,5 @@
 import { Schema } from "mongoose";
-import { IUser, userModel } from "./userModel";
+import { IUser, userModel } from "../users/userModel";
 
 interface IAdmin extends IUser {
     adminLevel: number;

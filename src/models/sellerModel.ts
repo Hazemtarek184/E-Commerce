@@ -1,5 +1,5 @@
 import mongoose, { Schema, Types } from "mongoose";
-import { IUser, userModel } from "./userModel";
+import { IUser, userModel } from "../users/userModel";
 
 interface ISeller extends IUser {
     productsId: Types.ObjectId[];

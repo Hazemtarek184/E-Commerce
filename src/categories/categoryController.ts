@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { mainCategoryModel, subCategoryModel } from "../models/categoriesModel";
+import { mainCategoryModel, subCategoryModel } from "./categoriesModel";
 import { serviceProviderModel } from "../models/serviceProviderModel";
 import { Types } from "mongoose";
 
@@ -326,7 +326,7 @@ export const updateSubCategory = async (req: Request, res: Response): Promise<vo
 export const updateServiceProvider = async (req: Request, res: Response): Promise<void> => {
     try {
         const { serviceProviderId } = req.params;
-        const { name, bio, imagesUrl, workingDays, workingHours, closingHours, phoneContact, locationLinks, offers } = req.body;
+        const { name, bio, imagesUrl, workingDays, workingHours, closingHours, phoneContacts, locationLinks, offers } = req.body;
 
         if (!serviceProviderId) {
             sendErrorResponse(res, 400, "Service provider ID is required");
@@ -345,7 +345,7 @@ export const updateServiceProvider = async (req: Request, res: Response): Promis
         if (workingDays !== undefined && workingDays.size != 0) updateData.workingDays = workingDays;
         if (workingHours !== undefined && workingHours.size != 0) updateData.workingHours = workingHours;
         if (closingHours !== undefined && closingHours.size != 0) updateData.closingHours = closingHours;
-        if (phoneContact !== undefined && phoneContact.size != 0) updateData.phoneContact = phoneContact;
+        if (phoneContacts !== undefined && phoneContacts.size != 0) updateData.phoneContacts = phoneContacts;
         if (locationLinks !== undefined && locationLinks.size != 0) updateData.locationLinks = locationLinks;
         if (offers !== undefined) updateData.offers = offers;
 

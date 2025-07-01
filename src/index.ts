@@ -2,7 +2,8 @@ import express from 'express';
 import mongoose from 'mongoose';
 import "dotenv/config.js";
 import bodyParser from 'body-parser';
-import categoryRouter from './routers/categoryRouter';
+import categoryRouter from './categories/categoryRouter';
+import userRouter from './users/userRouter';
 import cors from 'cors';
 
 const app = express();
@@ -15,6 +16,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 app.use("/api/", categoryRouter);
+app.use("/api/", userRouter);
 
 app.get("/", (req, res) => {
     res.send("Welcome to the API");
