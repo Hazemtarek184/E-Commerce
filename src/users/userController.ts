@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { addUserService, loginUserService, checkUserTokenService } from "./userService";
+import { addUserService, loginUserService, checkUserTokenService, getUsersService, getUserByIdService } from "./userService";
 import { signJwt } from "../utils/jwt";
 
 export const addUser = async (req: Request, res: Response): Promise<void> => {
@@ -39,3 +39,21 @@ export const checkUserToken = (req: Request, res: Response): void => {
     }
 };
 
+export const getUsers = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const users = await getUsersService();
+        res.status(200).json({ users });
+    } catch (error: any) {
+        res.status(500).json({ message: error.message || "Failed to get users." });
+    }
+};
+
+export const getUserById = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const user = await getUserByIdService(id);
+        res.status(200).json({ user });
+    } catch (error: any) {
+        res.status(500).json({ message: error.message || "Failed to get user." });
+    }
+};

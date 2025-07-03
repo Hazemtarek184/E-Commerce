@@ -1,6 +1,19 @@
 import { userModel } from "./userModel";
 import { signJwt, verifyJwt } from "../utils/jwt";
 
+export async function getUsersService() {
+    const users = await userModel.find();
+    return users;
+}
+
+export async function getUserByIdService(id: string) {
+    const user = await userModel.findById(id);
+    if (!user) {
+        throw new Error("User not found.");
+    }
+    return user;
+}
+
 export async function loginUserService(phone: string, password: string) {
     if (!phone || !password) {
         throw new Error("Phone number and password are required.");
