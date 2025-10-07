@@ -1,7 +1,7 @@
 export interface IServiceProvider {
     name: string;
     bio: string;
-    imagesUrl: string[];
+    imagesUrl: { url: string; public_id: string }[];
     workingDays: string[];
     workingHours: string[];
     closingHours: string[];

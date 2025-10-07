@@ -1,5 +1,6 @@
 import express from "express";
 import * as categoryController from "./categoryController";
+import { upload } from "../config/multer-config";
 
 const router = express.Router();
 
@@ -19,5 +20,8 @@ router.put("/service-providers/:serviceProviderId", categoryController.updateSer
 router.delete("/service-providers/:serviceProviderId", categoryController.deleteServiceProvider);
 
 router.get("/search-providers", categoryController.searchServiceProvidersByName);
+
+router.get("/upload-provider-photo", upload.single('photo'), categoryController.uploadPhoto);
+router.post("/upload-provider-photos", upload.array('photos', 10), categoryController.uploadPhotos);
 
 export default router;

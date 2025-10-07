@@ -2,6 +2,9 @@ import { Request, Response } from "express";
 import { mainCategoryModel, subCategoryModel } from "./categoriesModel";
 import { serviceProviderModel } from "../models/serviceProviderModel";
 import { Types } from "mongoose";
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryUploadResult } from "../types/Cloudinary.interface";
+import { uploadToCloudinary } from "./categoriesService";
 
 // Utility function for ObjectId validation
 const isValidObjectId = (id: string): boolean => {
@@ -218,8 +221,13 @@ export const createServiceProvider = async (req: Request, res: Response): Promis
             return;
         }
 
-        if (!name || !bio || !imagesUrl || !workingDays || !workingHours || !closingHours || !phoneContact || !locationLinks) {
+        if (!name || !bio || !workingDays || !workingHours || !closingHours || !phoneContact || !locationLinks) {
             sendErrorResponse(res, 400, "All required fields must be provided");
+            return;
+        }
+
+        if (imagesUrl && (!imagesUrl.url || !imagesUrl.public_id)) {
+            sendErrorResponse(res, 400, "Image url format is invalid");
             return;
         }
 
@@ -343,7 +351,7 @@ export const updateSubCategory = async (req: Request, res: Response): Promise<vo
 export const updateServiceProvider = async (req: Request, res: Response): Promise<void> => {
     try {
         const { serviceProviderId } = req.params;
-        const { name, bio, imagesUrl, workingDays, workingHours, closingHours, phoneContacts, locationLinks, offers } = req.body;
+        const { name, bio, workingDays, workingHours, closingHours, phoneContacts, locationLinks, offers } = req.body;
 
         if (!serviceProviderId) {
             sendErrorResponse(res, 400, "Service provider ID is required");
@@ -358,7 +366,6 @@ export const updateServiceProvider = async (req: Request, res: Response): Promis
         const updateData: any = {};
         if (name !== undefined && name) updateData.name = name;
         if (bio !== undefined && bio) updateData.bio = bio;
-        if (imagesUrl !== undefined && imagesUrl.size != 0) updateData.imagesUrl = imagesUrl;
         if (workingDays !== undefined && workingDays.size != 0) updateData.workingDays = workingDays;
         if (workingHours !== undefined && workingHours.size != 0) updateData.workingHours = workingHours;
         if (closingHours !== undefined && closingHours.size != 0) updateData.closingHours = closingHours;
@@ -500,3 +507,93 @@ export const deleteServiceProvider = async (req: Request, res: Response): Promis
     }
 };
 
+
+export const uploadPhoto = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const file = req.file;
+        if (!file) {
+            sendErrorResponse(res, 400, "No photo uploaded");
+            return;
+        }
+
+        // const { serviceProviderId } = req.body;
+        // if (!serviceProviderId) {
+        //     sendErrorResponse(res, 400, "Service provider id is missing");
+        //     return;
+        // }
+
+        // if (!isValidObjectId(serviceProviderId)) {
+        //     sendErrorResponse(res, 400, "Service provider id format is wrong");
+        //     return;
+        // }
+
+        // const serviceProvider = await serviceProviderModel.findById(serviceProviderId);
+        // if (!serviceProvider) {
+        //     sendErrorResponse(res, 400, "No service provider found");
+        //     return;
+        // }
+
+        const result = await uploadToCloudinary(file.buffer, 'E-Commerce');
+
+        const imageData = {
+            url: result.secure_url,
+            public_id: result.public_id
+        };
+
+        // serviceProvider.imagesUrl.push(imageData);
+        // await serviceProvider.save();
+
+        sendSuccessResponse(res, 201, imageData, "Photo stored successfully");
+    } catch (error) {
+        console.error("Error uploading failed:", error);
+        sendErrorResponse(res, 500, "Internal server error");
+    }
+};
+
+export const uploadPhotos = async (req: Request, res: Response): Promise<void> => {
+    try {
+        if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+            sendErrorResponse(res, 400, "No photos uploaded");
+            return;
+        }
+
+        const files = req.files as Express.Multer.File[];
+
+        const { serviceProviderId } = req.body;
+        if (!serviceProviderId) {
+            sendErrorResponse(res, 400, "Service provider id is missing");
+            return;
+        }
+
+        if (!isValidObjectId(serviceProviderId)) {
+            sendErrorResponse(res, 400, "Service provider id format is wrong");
+            return;
+        }
+
+        const serviceProvider = await serviceProviderModel.findById(serviceProviderId);
+        if (!serviceProvider) {
+            sendErrorResponse(res, 400, "No service provider found");
+            return;
+        }
+
+        // Upload all photos to Cloudinary
+        const uploadPromises = files.map(file =>
+            uploadToCloudinary(file.buffer, 'E-Commerce')
+        );
+
+        const results = await Promise.all(uploadPromises);
+
+        const imageData = results.map(result => ({
+            url: result.secure_url,
+            public_id: result.public_id
+        }));
+
+        serviceProvider.imagesUrl.push(...imageData);
+        await serviceProvider.save();
+
+        sendSuccessResponse(res, 201, imageData, "Photos stored successfully");
+    } catch (error) {
+        console.error("Error uploading failed:", error);
+        sendErrorResponse(res, 500, "Internal server error");
+    }
+};
