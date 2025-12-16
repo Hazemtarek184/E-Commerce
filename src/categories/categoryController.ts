@@ -1,15 +1,5 @@
 import { Request, Response } from "express";
-import { mainCategoryModel, subCategoryModel } from "./categoriesModel";
-import { serviceProviderModel } from "../models/serviceProviderModel";
-import { Types } from "mongoose";
-import { v2 as cloudinary } from 'cloudinary';
-import { CloudinaryUploadResult } from "../types/Cloudinary.interface";
-import { uploadToCloudinary } from "./categoriesService";
-
-// Utility function for ObjectId validation
-const isValidObjectId = (id: string): boolean => {
-    return Types.ObjectId.isValid(id);
-};
+import * as categoriesService from "./categoriesService";
 
 // Utility functions for consistent responses
 const sendErrorResponse = (res: Response, statusCode: number, message: string): void => {
@@ -31,7 +21,7 @@ const sendSuccessResponse = <T>(res: Response, statusCode: number, data?: T, mes
 // GET OPERATIONS
 export const getCategories = async (req: Request, res: Response): Promise<void> => {
     try {
-        const categories = await mainCategoryModel.find().select('englishName arabicName').lean();
+        const categories = await categoriesService.getAllCategories();
         sendSuccessResponse(res, 200, { categories });
     } catch (error) {
         console.error("Error fetching categories:", error);
@@ -48,24 +38,17 @@ export const getSubCategories = async (req: Request, res: Response): Promise<voi
             return;
         }
 
-        if (!isValidObjectId(mainCategoryId)) {
-            sendErrorResponse(res, 400, "Invalid main category ID format");
-            return;
-        }
-
-        const mainCategory = await mainCategoryModel.findById(mainCategoryId).populate('subCategories').lean();
-
-        if (!mainCategory) {
-            sendErrorResponse(res, 404, "Main category not found");
-            return;
-        }
-
-        const subCategories = mainCategory.subCategories;
-
+        const subCategories = await categoriesService.getSubCategories(mainCategoryId);
         sendSuccessResponse(res, 200, { subCategories });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error fetching sub-categories:", error);
-        sendErrorResponse(res, 500, "Internal server error");
+        if (error.message.includes("not found")) {
+            sendErrorResponse(res, 404, error.message);
+        } else if (error.message.includes("Invalid")) {
+            sendErrorResponse(res, 400, error.message);
+        } else {
+            sendErrorResponse(res, 500, "Internal server error");
+        }
     }
 };
 
@@ -78,38 +61,23 @@ export const getServiceProvider = async (req: Request, res: Response): Promise<v
             return;
         }
 
-        if (!isValidObjectId(subCategoryId)) {
-            sendErrorResponse(res, 400, "Invalid sub-category ID format");
-            return;
-        }
+        const result = await categoriesService.getServiceProviders(subCategoryId);
 
-        const subCategory = await subCategoryModel
-            .findById(subCategoryId)
-            .populate('serviceProvider')
-            .lean();
-
-        if (!subCategory) {
-            sendErrorResponse(res, 404, "Sub-category not found");
-            return;
-        }
-
-        if (!subCategory.serviceProvider || subCategory.serviceProvider.length === 0) {
+        if (!result.serviceProviders || result.serviceProviders.length === 0) {
             sendSuccessResponse(res, 200, { serviceProviders: [] }, "No service providers found for this sub-category");
             return;
         }
 
-        sendSuccessResponse(res, 200, {
-            serviceProviders: subCategory.serviceProvider,
-            subCategoryInfo: {
-                id: subCategory._id,
-                englishName: subCategory.englishName,
-                arabicName: subCategory.arabicName
-            }
-        });
-
-    } catch (error) {
+        sendSuccessResponse(res, 200, result);
+    } catch (error: any) {
         console.error("Error fetching service providers:", error);
-        sendErrorResponse(res, 500, "Internal server error");
+        if (error.message.includes("not found")) {
+            sendErrorResponse(res, 404, error.message);
+        } else if (error.message.includes("Invalid")) {
+            sendErrorResponse(res, 400, error.message);
+        } else {
+            sendErrorResponse(res, 500, "Internal server error");
+        }
     }
 };
 
@@ -120,13 +88,12 @@ export const searchServiceProvidersByName = async (req: Request, res: Response):
             sendErrorResponse(res, 400, "Query string is required");
             return;
         }
-        // Use a case-insensitive regex for substring search (supports English and Arabic)
-        const regex = new RegExp(searchString, 'i');
-        const providers = await serviceProviderModel.find({ name: regex });
+
+        const providers = await categoriesService.searchServiceProviders(searchString);
         sendSuccessResponse(res, 200, { providers });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error searching service providers:", error);
-        sendErrorResponse(res, 500, "Internal server error");
+        sendErrorResponse(res, 500, error.message || "Internal server error");
     }
 };
 
@@ -145,16 +112,11 @@ export const createCategory = async (req: Request, res: Response): Promise<void>
             return;
         }
 
-        const newCategoryData = {
-            englishName,
-            arabicName
-        };
-
-        const newCategory = await mainCategoryModel.create(newCategoryData);
+        const newCategory = await categoriesService.createCategory(englishName, arabicName);
         sendSuccessResponse(res, 201, { category: newCategory }, "Category created successfully");
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error creating category:", error);
-        sendErrorResponse(res, 500, "Internal server error");
+        sendErrorResponse(res, 500, error.message || "Internal server error");
     }
 };
 
@@ -168,36 +130,23 @@ export const createSubCategory = async (req: Request, res: Response): Promise<vo
             return;
         }
 
-        if (!isValidObjectId(mainCategoryId)) {
-            sendErrorResponse(res, 400, "Invalid main category ID format");
-            return;
-        }
-
         if (!englishName || !arabicName) {
             sendErrorResponse(res, 400, "English name and Arabic name are required");
             return;
         }
 
-        const mainCategory = await mainCategoryModel.findById(mainCategoryId);
-        if (!mainCategory) {
-            sendErrorResponse(res, 404, "Main category not found");
-            return;
-        }
-
-        const newSubCategoryData = {
-            englishName,
-            arabicName
-        };
-
-        const newSubCategory = await subCategoryModel.create(newSubCategoryData);
-
-        mainCategory.subCategories.push(newSubCategory._id);
-        await mainCategory.save();
+        const newSubCategory = await categoriesService.createSubCategory(mainCategoryId, englishName, arabicName);
 
         sendSuccessResponse(res, 201, { subCategory: newSubCategory }, "Sub category created successfully");
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error creating sub category:", error);
-        sendErrorResponse(res, 500, "Internal server error");
+        if (error.message.includes("not found")) {
+            sendErrorResponse(res, 404, error.message);
+        } else if (error.message.includes("Invalid")) {
+            sendErrorResponse(res, 400, error.message);
+        } else {
+            sendErrorResponse(res, 500, "Internal server error");
+        }
     }
 };
 
@@ -208,7 +157,7 @@ export const createServiceProvider = async (req: Request, res: Response): Promis
             return;
         }
 
-        const { name, bio, imagesUrl, workingDays, workingHours, closingHours, phoneContact, locationLinks, offers } = req.body;
+        const { name, bio, imagesUrl, workingDays, workingHours, closingHours, phoneContacts, locationLinks, offers } = req.body;
         const { subCategoryId } = req.params;
 
         if (!subCategoryId) {
@@ -216,25 +165,13 @@ export const createServiceProvider = async (req: Request, res: Response): Promis
             return;
         }
 
-        if (!isValidObjectId(subCategoryId)) {
-            sendErrorResponse(res, 400, "Invalid sub-category ID format");
-            return;
-        }
-
-        if (!name || !bio || !workingDays || !workingHours || !closingHours || !phoneContact || !locationLinks) {
+        if (!name || !bio || !workingDays || !workingHours || !closingHours || !phoneContacts || !locationLinks) {
             sendErrorResponse(res, 400, "All required fields must be provided");
             return;
         }
 
         if (imagesUrl && (!imagesUrl.url || !imagesUrl.public_id)) {
             sendErrorResponse(res, 400, "Image url format is invalid");
-            return;
-        }
-
-        const subCategory = await subCategoryModel.findById(subCategoryId);
-
-        if (!subCategory) {
-            sendErrorResponse(res, 404, "Sub-category not found");
             return;
         }
 
@@ -245,20 +182,22 @@ export const createServiceProvider = async (req: Request, res: Response): Promis
             workingDays,
             workingHours,
             closingHours,
-            phoneContact,
+            phoneContacts,
             locationLinks,
             offers
         };
 
-        const newServiceProvider = await serviceProviderModel.create(serviceProviderData);
-
-        subCategory.serviceProvider.push(newServiceProvider._id);
-        await subCategory.save();
-
+        const newServiceProvider = await categoriesService.createServiceProvider(subCategoryId, serviceProviderData);
         sendSuccessResponse(res, 201, { serviceProvider: newServiceProvider }, "Service provider created successfully");
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error creating service provider:", error);
-        sendErrorResponse(res, 500, "Internal server error");
+        if (error.message.includes("not found")) {
+            sendErrorResponse(res, 404, error.message);
+        } else if (error.message.includes("Invalid")) {
+            sendErrorResponse(res, 400, error.message);
+        } else {
+            sendErrorResponse(res, 500, "Internal server error");
+        }
     }
 };
 
@@ -273,11 +212,6 @@ export const updateMainCategory = async (req: Request, res: Response): Promise<v
             return;
         }
 
-        if (!isValidObjectId(categoryId)) {
-            sendErrorResponse(res, 400, "Invalid category ID format");
-            return;
-        }
-
         if (!englishName && !arabicName) {
             sendErrorResponse(res, 400, "At least one field (English or Arabic name) is required");
             return;
@@ -287,22 +221,17 @@ export const updateMainCategory = async (req: Request, res: Response): Promise<v
         if (englishName) updateData.englishName = englishName;
         if (arabicName) updateData.arabicName = arabicName;
 
-        const updatedCategory = await mainCategoryModel.findByIdAndUpdate(
-            categoryId,
-            { $set: updateData },
-            { new: true, runValidators: true }
-        );
-
-        if (!updatedCategory) {
-            sendErrorResponse(res, 404, "Category not found");
-            return;
-        }
-
+        const updatedCategory = await categoriesService.updateCategory(categoryId, updateData);
         sendSuccessResponse(res, 200, { category: updatedCategory }, "Category updated successfully");
-
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error updating category:", error);
-        sendErrorResponse(res, 500, "Internal server error");
+        if (error.message.includes("not found")) {
+            sendErrorResponse(res, 404, error.message);
+        } else if (error.message.includes("Invalid")) {
+            sendErrorResponse(res, 400, error.message);
+        } else {
+            sendErrorResponse(res, 500, "Internal server error");
+        }
     }
 };
 
@@ -316,11 +245,6 @@ export const updateSubCategory = async (req: Request, res: Response): Promise<vo
             return;
         }
 
-        if (!isValidObjectId(subCategoryId)) {
-            sendErrorResponse(res, 400, "Invalid sub-category ID format");
-            return;
-        }
-
         if (!englishName && !arabicName) {
             sendErrorResponse(res, 400, "At least one field (English or Arabic name) is required");
             return;
@@ -330,21 +254,17 @@ export const updateSubCategory = async (req: Request, res: Response): Promise<vo
         if (englishName) updateData.englishName = englishName;
         if (arabicName) updateData.arabicName = arabicName;
 
-        const updatedSubCategory = await subCategoryModel.findByIdAndUpdate(
-            subCategoryId,
-            { $set: updateData },
-            { new: true, runValidators: true }
-        );
-
-        if (!updatedSubCategory) {
-            sendErrorResponse(res, 404, "Sub-category not found");
-            return;
-        }
-
+        const updatedSubCategory = await categoriesService.updateSubCategory(subCategoryId, updateData);
         sendSuccessResponse(res, 200, { subCategory: updatedSubCategory }, "Sub-category updated successfully");
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error updating sub-category:", error);
-        sendErrorResponse(res, 500, "Internal server error");
+        if (error.message.includes("not found")) {
+            sendErrorResponse(res, 404, error.message);
+        } else if (error.message.includes("Invalid")) {
+            sendErrorResponse(res, 400, error.message);
+        } else {
+            sendErrorResponse(res, 500, "Internal server error");
+        }
     }
 };
 
@@ -355,11 +275,6 @@ export const updateServiceProvider = async (req: Request, res: Response): Promis
 
         if (!serviceProviderId) {
             sendErrorResponse(res, 400, "Service provider ID is required");
-            return;
-        }
-
-        if (!isValidObjectId(serviceProviderId)) {
-            sendErrorResponse(res, 400, "Invalid service provider ID format");
             return;
         }
 
@@ -378,25 +293,17 @@ export const updateServiceProvider = async (req: Request, res: Response): Promis
             return;
         }
 
-        const updatedServiceProvider = await serviceProviderModel.findByIdAndUpdate(
-            serviceProviderId,
-            { $set: updateData },
-            {
-                new: true
-                // , runValidators: true
-            }
-        );
-
-        if (!updatedServiceProvider) {
-            sendErrorResponse(res, 404, "Service provider not found");
-            return;
-        }
-
+        const updatedServiceProvider = await categoriesService.updateServiceProvider(serviceProviderId, updateData);
         sendSuccessResponse(res, 200, { serviceProvider: updatedServiceProvider }, "Service provider updated successfully");
-
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error updating service provider:", error);
-        sendErrorResponse(res, 500, "Internal server error");
+        if (error.message.includes("not found")) {
+            sendErrorResponse(res, 404, error.message);
+        } else if (error.message.includes("Invalid")) {
+            sendErrorResponse(res, 400, error.message);
+        } else {
+            sendErrorResponse(res, 500, "Internal server error");
+        }
     }
 };
 
@@ -410,37 +317,17 @@ export const deleteMainCategory = async (req: Request, res: Response): Promise<v
             return;
         }
 
-        if (!isValidObjectId(categoryId)) {
-            sendErrorResponse(res, 400, "Invalid category ID format");
-            return;
-        }
-
-        const category = await mainCategoryModel.findById(categoryId);
-
-        if (!category) {
-            sendErrorResponse(res, 404, "Category not found");
-            return;
-        }
-
-        // Delete all associated service providers first
-        for (const subCategoryId of category.subCategories) {
-            const subCategory = await subCategoryModel.findById(subCategoryId);
-            if (!subCategory) {
-                continue;
-            }
-
-            for (const serviceProviderId of subCategory.serviceProvider) {
-                await serviceProviderModel.findByIdAndDelete(serviceProviderId);
-            }
-
-            await subCategory.deleteOne();
-        }
-
-        await category.deleteOne();
+        await categoriesService.deleteCategory(categoryId);
         sendSuccessResponse(res, 200, null, "Category and all associated data deleted successfully");
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error deleting category:", error);
-        sendErrorResponse(res, 500, "Internal server error");
+        if (error.message.includes("not found")) {
+            sendErrorResponse(res, 404, error.message);
+        } else if (error.message.includes("Invalid")) {
+            sendErrorResponse(res, 400, error.message);
+        } else {
+            sendErrorResponse(res, 500, "Internal server error");
+        }
     }
 };
 
@@ -453,28 +340,17 @@ export const deleteSubCategory = async (req: Request, res: Response): Promise<vo
             return;
         }
 
-        if (!isValidObjectId(subCategoryId)) {
-            sendErrorResponse(res, 400, "Invalid sub-category ID format");
-            return;
-        }
-
-        const subCategory = await subCategoryModel.findById(subCategoryId);
-
-        if (!subCategory) {
-            sendErrorResponse(res, 404, "Sub-category not found");
-            return;
-        }
-
-        // Delete all associated service providers first
-        for (const serviceProviderId of subCategory.serviceProvider) {
-            await serviceProviderModel.findByIdAndDelete(serviceProviderId);
-        }
-
-        await subCategory.deleteOne();
+        await categoriesService.deleteSubCategory(subCategoryId);
         sendSuccessResponse(res, 200, null, "Sub-category and all associated data deleted successfully");
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error deleting sub-category:", error);
-        sendErrorResponse(res, 500, "Internal server error");
+        if (error.message.includes("not found")) {
+            sendErrorResponse(res, 404, error.message);
+        } else if (error.message.includes("Invalid")) {
+            sendErrorResponse(res, 400, error.message);
+        } else {
+            sendErrorResponse(res, 500, "Internal server error");
+        }
     }
 };
 
@@ -487,26 +363,19 @@ export const deleteServiceProvider = async (req: Request, res: Response): Promis
             return;
         }
 
-        if (!isValidObjectId(serviceProviderId)) {
-            sendErrorResponse(res, 400, "Invalid service provider ID format");
-            return;
-        }
-
-        const serviceProvider = await serviceProviderModel.findById(serviceProviderId);
-
-        if (!serviceProvider) {
-            sendErrorResponse(res, 404, "Service provider not found");
-            return;
-        }
-
-        await serviceProvider.deleteOne();
+        await categoriesService.deleteServiceProvider(serviceProviderId);
         sendSuccessResponse(res, 200, null, "Service provider deleted successfully");
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error deleting service provider:", error);
-        sendErrorResponse(res, 500, "Internal server error");
+        if (error.message.includes("not found")) {
+            sendErrorResponse(res, 404, error.message);
+        } else if (error.message.includes("Invalid")) {
+            sendErrorResponse(res, 400, error.message);
+        } else {
+            sendErrorResponse(res, 500, "Internal server error");
+        }
     }
 };
-
 
 export const uploadPhoto = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -516,37 +385,17 @@ export const uploadPhoto = async (req: Request, res: Response): Promise<void> =>
             return;
         }
 
-        // const { serviceProviderId } = req.body;
-        // if (!serviceProviderId) {
-        //     sendErrorResponse(res, 400, "Service provider id is missing");
-        //     return;
-        // }
-
-        // if (!isValidObjectId(serviceProviderId)) {
-        //     sendErrorResponse(res, 400, "Service provider id format is wrong");
-        //     return;
-        // }
-
-        // const serviceProvider = await serviceProviderModel.findById(serviceProviderId);
-        // if (!serviceProvider) {
-        //     sendErrorResponse(res, 400, "No service provider found");
-        //     return;
-        // }
-
-        const result = await uploadToCloudinary(file.buffer, 'E-Commerce');
+        const result = await categoriesService.uploadToCloudinary(file.buffer, 'E-Commerce');
 
         const imageData = {
             url: result.secure_url,
             public_id: result.public_id
         };
 
-        // serviceProvider.imagesUrl.push(imageData);
-        // await serviceProvider.save();
-
         sendSuccessResponse(res, 201, imageData, "Photo stored successfully");
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error uploading failed:", error);
-        sendErrorResponse(res, 500, "Internal server error");
+        sendErrorResponse(res, 500, error.message || "Internal server error");
     }
 };
 
@@ -558,42 +407,23 @@ export const uploadPhotos = async (req: Request, res: Response): Promise<void> =
         }
 
         const files = req.files as Express.Multer.File[];
-
         const { serviceProviderId } = req.body;
+
         if (!serviceProviderId) {
             sendErrorResponse(res, 400, "Service provider id is missing");
             return;
         }
 
-        if (!isValidObjectId(serviceProviderId)) {
-            sendErrorResponse(res, 400, "Service provider id format is wrong");
-            return;
-        }
-
-        const serviceProvider = await serviceProviderModel.findById(serviceProviderId);
-        if (!serviceProvider) {
-            sendErrorResponse(res, 400, "No service provider found");
-            return;
-        }
-
-        // Upload all photos to Cloudinary
-        const uploadPromises = files.map(file =>
-            uploadToCloudinary(file.buffer, 'E-Commerce')
-        );
-
-        const results = await Promise.all(uploadPromises);
-
-        const imageData = results.map(result => ({
-            url: result.secure_url,
-            public_id: result.public_id
-        }));
-
-        serviceProvider.imagesUrl.push(...imageData);
-        await serviceProvider.save();
-
+        const imageData = await categoriesService.addPhotosToServiceProvider(serviceProviderId, files);
         sendSuccessResponse(res, 201, imageData, "Photos stored successfully");
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error uploading failed:", error);
-        sendErrorResponse(res, 500, "Internal server error");
+        if (error.message.includes("not found")) {
+            sendErrorResponse(res, 404, error.message);
+        } else if (error.message.includes("Invalid")) {
+            sendErrorResponse(res, 400, error.message);
+        } else {
+            sendErrorResponse(res, 500, "Internal server error");
+        }
     }
 };
