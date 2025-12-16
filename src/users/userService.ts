@@ -39,9 +39,9 @@ export async function addUserService({ username, email, password, phone, gender 
         throw new Error("All fields are required.");
     }
 
-    const existingUser = await userModel.findOne({ email });
+    const existingUser = await userModel.findOne({ $or: [{ email }, { phone }] });
     if (existingUser) {
-        throw new Error("User already exists with this email.");
+        throw new Error("User already exists with this email or phone number.");
     }
 
     const newUser = new userModel({ username, email, password, phone, gender });
