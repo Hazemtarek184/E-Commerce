@@ -1,5 +1,6 @@
 import { userModel } from "./userModel";
 import { signJwt, verifyJwt } from "../utils/jwt";
+import { isValidObjectId } from "mongoose";
 
 export async function getUsersService() {
     const users = await userModel.find();
@@ -7,6 +8,10 @@ export async function getUsersService() {
 }
 
 export async function getUserByIdService(id: string) {
+    if (!isValidObjectId(id)) {
+        throw new Error("Invalid user ID format");
+    }
+
     const user = await userModel.findById(id);
     if (!user) {
         throw new Error("User not found.");
@@ -22,8 +27,8 @@ export async function loginUserService(phone: string, password: string) {
     if (!user) {
         throw new Error("Invalid phone number.");
     }
-    // For demonstration, compare plain text passwords (not secure for production)
-    if (user.password !== password) {
+
+    if (!user.comparePassword(password)) {
         throw new Error("Invalid phone number or password.");
     }
     return user;
@@ -33,10 +38,12 @@ export async function addUserService({ username, email, password, phone, gender 
     if (!username || !email || !password || !phone || !gender) {
         throw new Error("All fields are required.");
     }
+
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
         throw new Error("User already exists with this email.");
     }
+
     const newUser = new userModel({ username, email, password, phone, gender });
     await newUser.save();
     return newUser;

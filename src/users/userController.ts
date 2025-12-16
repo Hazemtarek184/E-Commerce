@@ -31,8 +31,10 @@ export const checkUserToken = (req: Request, res: Response): void => {
             res.status(401).json({ message: "No token provided." });
             return;
         }
+
         const token = authHeader.split(" ")[1];
         const decoded = checkUserTokenService(token);
+
         res.status(200).json({ valid: true, decoded });
     } catch (error: any) {
         res.status(401).json({ valid: false, message: error.message || "Invalid or expired token.", error });
