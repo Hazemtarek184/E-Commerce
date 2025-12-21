@@ -18,6 +18,20 @@ app.use(bodyParser.json());
 app.use("/api/", categoryRouter);
 app.use("/api/", userRouter);
 
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './config/swagger';
+
+const CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.0.0/swagger-ui.min.css";
+const JS_URL = [
+    "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.0.0/swagger-ui-bundle.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.0.0/swagger-ui-standalone-preset.min.js"
+];
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customCssUrl: CSS_URL,
+    customJs: JS_URL
+}));
+
 app.get("/", (req, res) => {
     res.send("Welcome to the API");
 });

@@ -61,14 +61,14 @@ export const getServiceProvider = async (req: Request, res: Response): Promise<v
             return;
         }
 
-        const result = await categoriesService.getServiceProviders(subCategoryId);
+        const serviceProviders = await categoriesService.getServiceProviders(subCategoryId);
 
-        if (!result.serviceProviders || result.serviceProviders.length === 0) {
+        if (!serviceProviders || serviceProviders.length === 0) {
             sendSuccessResponse(res, 200, { serviceProviders: [] }, "No service providers found for this sub-category");
             return;
         }
 
-        sendSuccessResponse(res, 200, result);
+        sendSuccessResponse(res, 200, { serviceProviders });
     } catch (error: any) {
         console.error("Error fetching service providers:", error);
         if (error.message.includes("not found")) {
@@ -157,7 +157,7 @@ export const createServiceProvider = async (req: Request, res: Response): Promis
             return;
         }
 
-        const { name, bio, imagesUrl, workingDays, workingHours, closingHours, phoneContacts, locationLinks, offers } = req.body;
+        const { name, bio, workingDays, workingHours, closingHours, phoneContacts, locationLinks, offers } = req.body;
         const { subCategoryId } = req.params;
 
         if (!subCategoryId) {
@@ -170,10 +170,34 @@ export const createServiceProvider = async (req: Request, res: Response): Promis
             return;
         }
 
-        if (imagesUrl && (!imagesUrl.url || !imagesUrl.public_id)) {
-            sendErrorResponse(res, 400, "Image url format is invalid");
-            return;
+        let imagesUrl: { url: string; public_id: string }[] = [];
+
+        // Handle File Upload
+        if (req.file) {
+            const result = await categoriesService.uploadToCloudinary(req.file.buffer, 'E-Commerce');
+            imagesUrl.push({
+                url: result.secure_url,
+                public_id: result.public_id
+            });
         }
+
+        // Also allow passing imagesUrl directly if no file is uploaded (optional, for backward compatibility or direct URL passing) or merge them
+        // if (req.body.imagesUrl) {
+        //     let bodyImages = req.body.imagesUrl;
+        //     if (typeof bodyImages === 'string') {
+        //         try {
+        //             bodyImages = JSON.parse(bodyImages);
+        //         } catch (e) {
+        //             // ignore or handle error
+        //         }
+        //     }
+        //     if (Array.isArray(bodyImages)) {
+        //         imagesUrl = [...imagesUrl, ...bodyImages];
+        //     } else if (typeof bodyImages === 'object' && bodyImages.url && bodyImages.public_id) {
+        //         imagesUrl.push(bodyImages);
+        //     }
+        // }
+
 
         const serviceProviderData = {
             name,

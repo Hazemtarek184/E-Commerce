@@ -38,7 +38,7 @@ export const getSubCategories = async (mainCategoryId: string) => {
         throw new Error("Invalid main category ID format");
     }
 
-    const mainCategory = await mainCategoryModel.findById(mainCategoryId).populate('subCategories').lean();
+    const mainCategory = await mainCategoryModel.findById(mainCategoryId).populate('subCategories', '-serviceProvider').lean();
 
     if (!mainCategory) {
         throw new Error("Main category not found");
@@ -61,14 +61,7 @@ export const getServiceProviders = async (subCategoryId: string) => {
         throw new Error("Sub-category not found");
     }
 
-    return {
-        serviceProviders: subCategory.serviceProvider,
-        subCategoryInfo: {
-            id: subCategory._id,
-            englishName: subCategory.englishName,
-            arabicName: subCategory.arabicName
-        }
-    };
+    return subCategory.serviceProvider;
 };
 
 export const searchServiceProviders = async (searchString: string) => {
