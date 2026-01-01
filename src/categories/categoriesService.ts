@@ -69,6 +69,17 @@ export const searchServiceProviders = async (searchString: string) => {
     return await serviceProviderModel.find({ name: regex });
 };
 
+export const getServiceProviderById = async (serviceProviderId: string) => {
+    if (!isValidObjectId(serviceProviderId)) {
+        throw new Error("Invalid service provider ID format");
+    }
+    const serviceProvider = await serviceProviderModel.findById(serviceProviderId);
+    if (!serviceProvider) {
+        throw new Error("Service provider not found");
+    }
+    return serviceProvider;
+};
+
 // CREATE Operations
 export const createCategory = async (englishName: string, arabicName: string) => {
     return await mainCategoryModel.create({ englishName, arabicName });

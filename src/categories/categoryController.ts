@@ -173,11 +173,19 @@ export const createServiceProvider = async (req: Request, res: Response): Promis
         let imagesUrl: { url: string; public_id: string }[] = [];
 
         // Handle File Upload
-        if (req.file) {
-            const result = await categoriesService.uploadToCloudinary(req.file.buffer, 'E-Commerce');
-            imagesUrl.push({
-                url: result.secure_url,
-                public_id: result.public_id
+        if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+            const files = req.files as Express.Multer.File[];
+            const uploadPromises = files.map(file =>
+                categoriesService.uploadToCloudinary(file.buffer, 'E-Commerce')
+            );
+
+            const results = await Promise.all(uploadPromises);
+
+            results.forEach(result => {
+                imagesUrl.push({
+                    url: result.secure_url,
+                    public_id: result.public_id
+                });
             });
         }
 
@@ -295,25 +303,66 @@ export const updateSubCategory = async (req: Request, res: Response): Promise<vo
 export const updateServiceProvider = async (req: Request, res: Response): Promise<void> => {
     try {
         const { serviceProviderId } = req.params;
-        const { name, bio, workingDays, workingHours, closingHours, phoneContacts, locationLinks, offers } = req.body;
 
         if (!serviceProviderId) {
             sendErrorResponse(res, 400, "Service provider ID is required");
             return;
         }
 
-        const updateData: any = {};
-        if (name !== undefined && name) updateData.name = name;
-        if (bio !== undefined && bio) updateData.bio = bio;
-        if (workingDays !== undefined && workingDays.size != 0) updateData.workingDays = workingDays;
-        if (workingHours !== undefined && workingHours.size != 0) updateData.workingHours = workingHours;
-        if (closingHours !== undefined && closingHours.size != 0) updateData.closingHours = closingHours;
-        if (phoneContacts !== undefined && phoneContacts.size != 0) updateData.phoneContacts = phoneContacts;
-        if (locationLinks !== undefined && locationLinks.size != 0) updateData.locationLinks = locationLinks;
-        if (offers !== undefined) updateData.offers = offers;
+        // 1. Parse the JSON string from 'data' field
+        let updateData: any = {};
+        if (req.body.data) {
+            try {
+                updateData = JSON.parse(req.body.data);
+            } catch (e) {
+                sendErrorResponse(res, 400, "Invalid JSON in 'data' field");
+                return;
+            }
+        } else {
+            // Fallback to spread if no 'data' key, assuming standard fields might be there
+            // (Though the plan is to move to 'data', this keeps some safety)
+            updateData = { ...req.body };
+        }
 
-        if (Object.keys(updateData).length === 0) {
-            sendErrorResponse(res, 400, "At least one field is required for update");
+        const { deletedImageIds } = updateData;
+
+        // Fetch existing provider to get current state
+        const existingProvider = await categoriesService.getServiceProviderById(serviceProviderId);
+
+        // 2. Start with existing images
+        let imagesUrl: { url: string; public_id: string }[] = existingProvider.imagesUrl || [];
+
+        // 3. Handle Deletions
+        if (deletedImageIds && Array.isArray(deletedImageIds) && deletedImageIds.length > 0) {
+            imagesUrl = imagesUrl.filter(img => !deletedImageIds.includes(img.public_id));
+        }
+
+        // 4. Handle Additions (Append)
+        if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+            const files = req.files as Express.Multer.File[];
+            const uploadPromises = files.map(file =>
+                categoriesService.uploadToCloudinary(file.buffer, 'E-Commerce')
+            );
+            const results = await Promise.all(uploadPromises);
+            results.forEach(result => {
+                imagesUrl.push({
+                    url: result.secure_url,
+                    public_id: result.public_id
+                });
+            });
+        }
+
+        // If we processed any images (deletion or addition), we update the field.
+        if ((deletedImageIds && deletedImageIds.length > 0) || (req.files && Array.isArray(req.files) && req.files.length > 0)) {
+            updateData.imagesUrl = imagesUrl;
+        }
+
+        // Clean up: Remove fields that shouldn't be in the final DB update
+        delete updateData.deletedImageIds;
+
+        // Ensure we don't try to update with empty object if nothing was passed (though images might be updated)
+        if (Object.keys(updateData).length === 0 && (!req.files || req.files.length === 0)) {
+            sendErrorResponse(res, 400, "No update data provided");
             return;
         }
 

@@ -452,7 +452,7 @@ router.delete("/sub-categories/:subCategoryId", categoryController.deleteSubCate
  *         description: The service provider was created
  */
 router.get("/service-providers/:subCategoryId", categoryController.getServiceProvider);
-router.post("/service-providers/:subCategoryId", upload.single('image'), categoryController.createServiceProvider);
+router.post("/service-providers/:subCategoryId", upload.array('image', 10), categoryController.createServiceProvider);
 
 /**
  * @swagger
@@ -535,7 +535,7 @@ router.post("/service-providers/:subCategoryId", upload.single('image'), categor
  *       200:
  *         description: The service provider was deleted
  */
-router.put("/service-providers/:serviceProviderId", categoryController.updateServiceProvider);
+router.put("/service-providers/:serviceProviderId", upload.array('image', 10), categoryController.updateServiceProvider);
 router.delete("/service-providers/:serviceProviderId", categoryController.deleteServiceProvider);
 
 /**
