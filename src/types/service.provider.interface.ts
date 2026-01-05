@@ -3,8 +3,8 @@ export interface IServiceProvider {
     bio: string;
     imagesUrl: { url: string; public_id: string }[];
     workingDays: string[];
-    workingHours: string[];
-    closingHours: string[];
+    workingHour: string;
+    closingHour: string;
     phoneContacts: phoneContacts[];
     locationLinks: string[];
     offers?: offers[];

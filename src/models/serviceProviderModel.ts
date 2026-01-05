@@ -9,8 +9,8 @@ const serviceProviderSchema: Schema = new Schema({
         public_id: { type: String, required: true }
     }],
     workingDays: [{ type: String, required: true }],
-    workingHours: [{ type: String, required: true }],
-    closingHours: [{ type: String, required: true }],
+    workingHour: { type: String, required: true },
+    closingHour: { type: String, required: true },
     phoneContacts: [{ type: Schema.Types.Mixed, required: true }],
     locationLinks: [{ type: String, required: true }],
     offers: [{ type: Schema.Types.Mixed, required: false }],

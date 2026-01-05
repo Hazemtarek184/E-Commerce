@@ -79,14 +79,10 @@ const router = express.Router();
  *           type: array
  *           items:
  *             type: string
- *         workingHours:
- *           type: array
- *           items:
- *             type: string
- *         closingHours:
- *           type: array
- *           items:
- *             type: string
+ *         workingHour:
+ *           type: string
+ *         closingHour:
+ *           type: string
  *         phoneContacts:
  *           type: array
  *           items:
@@ -411,14 +407,10 @@ router.delete("/sub-categories/:subCategoryId", categoryController.deleteSubCate
  *                 type: array
  *                 items:
  *                   type: string
- *               workingHours:
- *                  type: array
- *                  items:
- *                    type: string
- *               closingHours:
- *                  type: array
- *                  items:
- *                    type: string
+ *               workingHour:
+ *                  type: string
+ *               closingHour:
+ *                  type: string
  *               phoneContacts:
  *                  type: array
  *                  items:
@@ -482,14 +474,10 @@ router.post("/service-providers/:subCategoryId", upload.array('image', 10), cate
  *                 type: array
  *                 items:
  *                   type: string
- *               workingHours:
- *                  type: array
- *                  items:
- *                    type: string
- *               closingHours:
- *                  type: array
- *                  items:
- *                    type: string
+ *               workingHour:
+ *                  type: string
+ *               closingHour:
+ *                  type: string
  *               phoneContacts:
  *                  type: array
  *                  items:

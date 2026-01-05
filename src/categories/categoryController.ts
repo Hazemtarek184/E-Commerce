@@ -157,7 +157,7 @@ export const createServiceProvider = async (req: Request, res: Response): Promis
             return;
         }
 
-        const { name, bio, workingDays, workingHours, closingHours, phoneContacts, locationLinks, offers } = req.body;
+        const { name, bio, workingDays, workingHour, closingHour, phoneContacts, locationLinks, offers } = req.body;
         const { subCategoryId } = req.params;
 
         if (!subCategoryId) {
@@ -165,7 +165,7 @@ export const createServiceProvider = async (req: Request, res: Response): Promis
             return;
         }
 
-        if (!name || !bio || !workingDays || !workingHours || !closingHours || !phoneContacts || !locationLinks) {
+        if (!name || !bio || !workingDays || !workingHour || !closingHour || !phoneContacts || !locationLinks) {
             sendErrorResponse(res, 400, "All required fields must be provided");
             return;
         }
@@ -212,8 +212,8 @@ export const createServiceProvider = async (req: Request, res: Response): Promis
             bio,
             imagesUrl,
             workingDays,
-            workingHours,
-            closingHours,
+            workingHour,
+            closingHour,
             phoneContacts,
             locationLinks,
             offers
