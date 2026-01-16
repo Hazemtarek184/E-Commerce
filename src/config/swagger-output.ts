@@ -11,7 +11,7 @@ export const swaggerSpec = {
       "description": "Production server"
     },
     {
-      "url": "http://localhost:3000/api",
+      "url": "http://localhost:8000/api",
       "description": "Development server"
     }
   ],
@@ -331,6 +331,9 @@ export const swaggerSpec = {
         "responses": {
           "200": {
             "description": "The sub-category was deleted"
+          },
+          "404": {
+            "description": "Sub-category not found"
           }
         }
       }

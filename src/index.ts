@@ -1,9 +1,10 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import "dotenv/config.js";
-import bodyParser from 'body-parser';
-import categoryRouter from './categories/categoryRouter';
+import categoryRouter from './main-categories/categoryRouter';
+import subCategoryRouter from './sub-categories/subCategoryRouter';
 import userRouter from './users/userRouter';
+import serviceProviderRouter from './service-provider/serviceProviderRouter';
 import cors from 'cors';
 
 const app = express();
@@ -16,6 +17,8 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.use("/api/", categoryRouter);
+app.use("/api/", subCategoryRouter);
+app.use("/api/", serviceProviderRouter);
 app.use("/api/", userRouter);
 
 import swaggerUi from 'swagger-ui-express';

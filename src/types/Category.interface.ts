@@ -5,9 +5,3 @@ export interface IMainCategory {
     arabicName: string;
     subCategories: Types.ObjectId[];
 }
-
-export interface ISubCategory {
-    englishName: string;
-    arabicName: string;
-    serviceProvider: Types.ObjectId[];
-}
