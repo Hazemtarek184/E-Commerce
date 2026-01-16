@@ -422,17 +422,11 @@ export const swaggerSpec = {
                       "type": "string"
                     }
                   },
-                  "workingHours": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
+                  "workingHour": {
+                    "type": "string"
                   },
-                  "closingHours": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
+                  "closingHour": {
+                    "type": "string"
                   },
                   "phoneContacts": {
                     "type": "array",
@@ -525,17 +519,11 @@ export const swaggerSpec = {
                       "type": "string"
                     }
                   },
-                  "workingHours": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
+                  "workingHour": {
+                    "type": "string"
                   },
-                  "closingHours": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
+                  "closingHour": {
+                    "type": "string"
                   },
                   "phoneContacts": {
                     "type": "array",
@@ -651,6 +639,17 @@ export const swaggerSpec = {
             }
           }
         }
+      },
+      "post": {
+        "summary": "Search using post method",
+        "tags": [
+          "ServiceProviders"
+        ],
+        "responses": {
+          "200": {
+            "description": "Search works"
+          }
+        }
       }
     }
   },
@@ -754,17 +753,11 @@ export const swaggerSpec = {
               "type": "string"
             }
           },
-          "workingHours": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+          "workingHour": {
+            "type": "string"
           },
-          "closingHours": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+          "closingHour": {
+            "type": "string"
           },
           "phoneContacts": {
             "type": "array",
