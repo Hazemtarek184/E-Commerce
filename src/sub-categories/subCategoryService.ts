@@ -3,19 +3,50 @@ import { subCategoryModel } from "./subCategoryModel";
 import { isValidObjectId } from "../utils/validation";
 import { ISubCategory } from "../types/SubCategory.interface";
 import { serviceProviderModel } from "../service-provider/serviceProviderModel";
+import { Types } from "mongoose";
+
+// export const getSubCategories = async (mainCategoryId: string) => {
+//     if (!isValidObjectId(mainCategoryId)) {
+//         throw new Error("Invalid main category ID format");
+//     }
+
+//     const mainCategory = await mainCategoryModel.findById(mainCategoryId).populate('subCategories', '-serviceProvider').lean();
+
+//     if (!mainCategory) {
+//         throw new Error("Main category not found");
+//     }
+
+//     return mainCategory.subCategories;
+// };
 
 export const getSubCategories = async (mainCategoryId: string) => {
+    // 1. Validation
     if (!isValidObjectId(mainCategoryId)) {
         throw new Error("Invalid main category ID format");
     }
 
-    const mainCategory = await mainCategoryModel.findById(mainCategoryId).populate('subCategories', '-serviceProvider').lean();
+    // 2. Fetch Main Category & Fill in SubCategory details
+    const mainCategory = await mainCategoryModel
+        .findById(mainCategoryId)
+        .populate("subCategories") // This turns the IDs into actual objects
+        .lean();
 
+    // 3. Check if found
     if (!mainCategory) {
         throw new Error("Main category not found");
     }
 
-    return mainCategory.subCategories;
+    // 4. Transform the data
+    // We handle the case where subCategories might be null/undefined safely
+    const list = mainCategory.subCategories || [];
+
+    return list.map((sub: any) => ({
+        _id: sub._id,
+        englishName: sub.englishName,
+        arabicName: sub.arabicName,
+        // We simply count the IDs in the array
+        serviceProviderCount: sub.serviceProvider ? sub.serviceProvider.length : 0
+    }));
 };
 
 export const createSubCategory = async (mainCategoryId: string, englishName: string, arabicName: string) => {
