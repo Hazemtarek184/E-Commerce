@@ -13,6 +13,7 @@ const MONGOURI = process.env.MONGO_CONNECTION_URI;
 
 app.use(cors());
 // app.options('(.*)', cors()); // Enable pre-flight for all routes
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 

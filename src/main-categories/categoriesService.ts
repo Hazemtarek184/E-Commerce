@@ -6,7 +6,18 @@ import { subCategoryModel } from "../sub-categories/subCategoryModel";
 
 // GET Operations
 export const getAllCategories = async () => {
-    return await mainCategoryModel.find().select('englishName arabicName').lean();
+    return await mainCategoryModel.aggregate([
+        {
+            $project: {
+                englishName: 1,
+                arabicName: 1,
+                // Create a new field that counts the array length
+                subCategoryCount: {
+                    $size: { $ifNull: ["$subCategories", []] }
+                }
+            }
+        }
+    ]);
 };
 
 // CREATE Operations
